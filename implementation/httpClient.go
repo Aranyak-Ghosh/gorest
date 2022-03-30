@@ -11,8 +11,10 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/Aranyak-Ghosh/gorest/types"
+	"github.com/asaskevich/govalidator"
 
 	"github.com/Aranyak-Ghosh/gorest/interfaces"
 )
@@ -30,9 +32,18 @@ const (
 )
 
 // SetBaseUrl sets the base url for the http client
-func (h *httpClient) SetBaseUrl(baseUrl string) {
+func (h *httpClient) SetBaseUrl(baseUrl string) error {
+	err := validateUrl(baseUrl)
+	if err != nil {
+		return err
+	} else {
+		h.baseUrl = baseUrl
+		return nil
+	}
+}
 
-	h.baseUrl = baseUrl
+func (h *httpClient) SetTimeout(timeout time.Duration) {
+	h.client.Timeout = timeout
 }
 
 // SetMaxRetry sets the max retry for the http client
@@ -40,8 +51,18 @@ func (h *httpClient) SetMaxRetry(maxRetry int) {
 	h.maxRetry = maxRetry
 }
 
+// Delete makes a delete request to the http client
+func (h *httpClient) Del(endpoint string, query types.Query, headers map[string]string) *interfaces.HttpResponse {
+	return nil
+}
+
 // Get makes a get request to the http client
 func (h *httpClient) Get(endpoint string, query types.Query, headers map[string]string) *interfaces.HttpResponse {
+	return nil
+}
+
+// Head makes a head request
+func (h *httpClient) Head(endpoint string, headers map[string]string) *interfaces.HttpResponse {
 	return nil
 }
 
@@ -55,13 +76,8 @@ func (h *httpClient) Put(endpoint string, query types.Query, headers map[string]
 	return nil
 }
 
-// Put makes a put request to the http client
-func (h *httpClient) Patch(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) *interfaces.HttpResponse {
-	return nil
-}
-
 // Patch makes a patch request to the http client
-func (h *httpClient) Del(endpoint string, query types.Query, headers map[string]string) *interfaces.HttpResponse {
+func (h *httpClient) Patch(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) *interfaces.HttpResponse {
 	return nil
 }
 
@@ -157,5 +173,13 @@ func handleResponse(response *http.Response, res *httpResponse) {
 		res.Error = err
 	} else {
 		res.ResponseData = body
+	}
+}
+
+func validateUrl(url string) error {
+	if ok := govalidator.IsURL(url); !ok {
+		return types.ValidationError("Url")
+	} else {
+		return nil
 	}
 }
