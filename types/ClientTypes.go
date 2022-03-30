@@ -1,12 +1,35 @@
 package types
 
-type Query map[string]string
+import (
+	"fmt"
+	"net/url"
+	"reflect"
+)
 
-type HttpResponse struct {
-	ResponseData    []byte
-	Error           error
-	StatusCode      int
-	ResponseHeaders map[string][]string
+type Query map[string]any
+
+func (q *Query) UrlEncode() string {
+
+	var data url.Values
+
+	for key, value := range *q {
+		if value == nil {
+			delete(*q, key)
+		}
+		if reflect.TypeOf(value).Kind() == reflect.Slice {
+			data[key] = make([]string, len(value.([]any)))
+			for _, v := range value.([]any) {
+				data[key] = append(data[key], fmt.Sprintf("%v", v))
+			}
+		} else {
+			data.Add(key, fmt.Sprintf("%v", value))
+		}
+	}
+	return data.Encode()
+}
+
+func (q *Query) Add(key string, value any) {
+	(*q)[key] = value
 }
 
 type ContentType int
