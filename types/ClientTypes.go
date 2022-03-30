@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -8,24 +9,36 @@ import (
 
 type Query map[string]any
 
-func (q *Query) UrlEncode() string {
+func (q *Query) UrlEncode() (string, error) {
 
 	var data url.Values
 
 	for key, value := range *q {
+
 		if value == nil {
 			delete(*q, key)
 		}
+
 		if reflect.TypeOf(value).Kind() == reflect.Slice {
 			data[key] = make([]string, len(value.([]any)))
 			for _, v := range value.([]any) {
-				data[key] = append(data[key], fmt.Sprintf("%v", v))
+				d, err := json.Marshal(v)
+				if err == nil {
+					data[key] = append(data[key], string(d))
+				} else {
+					return "", SerializeBodyError(fmt.Errorf("Failed to serialize key %s", key))
+				}
 			}
 		} else {
-			data.Add(key, fmt.Sprintf("%v", value))
+			d, err := json.Marshal(value)
+			if err != nil {
+				return "", SerializeBodyError(fmt.Errorf("Failed to serialize key %s", key))
+			} else {
+				data.Add(key, string(d))
+			}
 		}
 	}
-	return data.Encode()
+	return data.Encode(), nil
 }
 
 func (q *Query) Add(key string, value any) {
@@ -62,17 +75,23 @@ func (c *ContentType) Header() string {
 	}
 }
 
-func (c *ContentType) FromHeader(header string) ContentType {
+func (c *ContentType) FromHeader(header string) bool {
 	switch header {
 	case "application/json":
-		return JSON
+		*c = JSON
+		return true
 	case "application/xml":
-		return XML
+		*c = XML
+		return true
 	case "application/octet-stream":
-		return RAW
+		*c = RAW
+		return true
 	case "application/x-www-form-urlencoded":
-		return FormData
+		*c = FormData
+		return true
 	default:
-		return JSON
+		//TODO: Current implementation defaults to handling other content-type as octet-stream. If an error needs to be thrown, default return can be changed to false. Alternatively, more enums and cases can be added and a PR can be created to handle other content-types
+		*c = RAW
+		return true
 	}
 }
