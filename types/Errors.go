@@ -16,6 +16,14 @@ func SerializeBodyError(err error) *HttpClientError {
 	return &HttpClientError{
 		ErrorCode:    2000,
 		ErrorDetails: err,
-		ErrorMessage: "failed to serialize supplied body with error",
+		ErrorMessage: "Failed to serialize supplied body with error",
+	}
+}
+
+func ValidationError(attrName string) *HttpClientError {
+	return &HttpClientError{
+		ErrorCode:    2001,
+		ErrorDetails: fmt.Errorf("Validation for attribute %s failed", attrName),
+		ErrorMessage: "Failed to validate attribute",
 	}
 }
