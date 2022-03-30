@@ -68,10 +68,10 @@ func (h *httpClient) Del(endpoint string, query types.Query, headers map[string]
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(DEL, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			h.exec(req, res)
@@ -86,10 +86,10 @@ func (h *httpClient) Get(endpoint string, query types.Query, headers map[string]
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(GET, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			h.exec(req, res)
@@ -103,10 +103,10 @@ func (h *httpClient) Head(endpoint string, headers map[string]string) interfaces
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, nil); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(HEAD, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			h.exec(req, res)
@@ -121,15 +121,15 @@ func (h *httpClient) Post(endpoint string, query types.Query, headers map[string
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(POST, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			e = handleRequestBody(req, body, bodyType)
 			if e != nil {
-				res.Error = e
+				res.receivedError = e
 			} else {
 				h.exec(req, res)
 			}
@@ -143,15 +143,15 @@ func (h *httpClient) Put(endpoint string, query types.Query, headers map[string]
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(PUT, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			e = handleRequestBody(req, body, bodyType)
 			if e != nil {
-				res.Error = e
+				res.receivedError = e
 			} else {
 				h.exec(req, res)
 			}
@@ -167,15 +167,15 @@ func (h *httpClient) Patch(endpoint string, query types.Query, headers map[strin
 	var res = &httpResponse{}
 
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
 		if req, e := http.NewRequest(PUT, url, nil); e != nil {
-			res.Error = e
+			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
 			e = handleRequestBody(req, body, bodyType)
 			if e != nil {
-				res.Error = e
+				res.receivedError = e
 			} else {
 				h.exec(req, res)
 			}
@@ -187,7 +187,7 @@ func (h *httpClient) Patch(endpoint string, query types.Query, headers map[strin
 }
 
 func isSuccessResponse(response *httpResponse) bool {
-	return response.StatusCode >= 200 && response.StatusCode < 300
+	return response.statusCode >= 200 && response.statusCode < 300
 }
 
 func handleRequestBody(request *http.Request, body any, bodyType types.ContentType) error {
@@ -275,15 +275,15 @@ func constructHeaders(req *http.Request, headers map[string]string) {
 }
 
 func handleResponse(response *http.Response, res *httpResponse) {
-	res.StatusCode = response.StatusCode
-	res.ResponseHeaders = map[string][]string(response.Header)
+	res.statusCode = response.StatusCode
+	res.responseHeaders = map[string][]string(response.Header)
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 
 	if err != nil {
-		res.Error = err
+		res.receivedError = err
 	} else {
-		res.ResponseData = body
+		res.responseData = body
 	}
 }
 
@@ -328,7 +328,7 @@ func (h *httpClient) exec(req *http.Request, res *httpResponse) {
 	for (attempt <= *h.maxRetry) && !isSuccess {
 		response, e := h.client.Do(req)
 		if e != nil {
-			res.Error = e
+			res.receivedError = e
 			attempt++
 		} else {
 			isSuccess = true
