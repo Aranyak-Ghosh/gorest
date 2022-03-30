@@ -12,6 +12,7 @@ type httpResponse struct {
 	receivedError   error
 	statusCode      int
 	responseHeaders http.Header
+	nativeResponse  *http.Response
 }
 
 var _ interfaces.HttpResponse = (*httpResponse)(nil)
@@ -20,6 +21,8 @@ func (h *httpResponse) Result(val *any) error {
 	if h.receivedError != nil {
 		return h.receivedError
 	}
+
+	http.DetectContentType(h.responseData)
 
 	return nil
 }

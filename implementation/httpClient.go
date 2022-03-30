@@ -276,6 +276,7 @@ func constructHeaders(req *http.Request, headers map[string]string) {
 
 func handleResponse(response *http.Response, res *httpResponse) {
 	res.statusCode = response.StatusCode
+	res.nativeResponse = response
 	res.responseHeaders = map[string][]string(response.Header)
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
