@@ -1,6 +1,7 @@
 package implementation
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Aranyak-Ghosh/gorest/interfaces"
@@ -35,4 +36,7 @@ func (h *httpResponse) Headers() http.Header {
 }
 func (h *httpResponse) RawData() []byte {
 	return []byte(h.responseData)
+}
+func (h *httpResponse) Error() error {
+	return fmt.Errorf("%w", h.receivedError)
 }
