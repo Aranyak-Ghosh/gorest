@@ -22,8 +22,19 @@ import (
 type httpClient struct {
 	client   *http.Client
 	baseUrl  string
-	maxRetry int
+	maxRetry *int
 }
+
+const blankString = ""
+
+const (
+	GET   = "GET"
+	POST  = "POST"
+	PUT   = "PUT"
+	PATCH = "PATCH"
+	DEL   = "DELETE"
+	HEAD  = "HEAD"
+)
 
 var _ interfaces.HttpClient = (*httpClient)(nil)
 
@@ -48,37 +59,131 @@ func (h *httpClient) SetTimeout(timeout time.Duration) {
 
 // SetMaxRetry sets the max retry for the http client
 func (h *httpClient) SetMaxRetry(maxRetry int) {
-	h.maxRetry = maxRetry
+	h.maxRetry = new(int)
+	*h.maxRetry = maxRetry
 }
 
 // Delete makes a delete request to the http client
-func (h *httpClient) Del(endpoint string, query types.Query, headers map[string]string) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Del(endpoint string, query types.Query, headers map[string]string) interfaces.HttpResponse {
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(DEL, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			h.exec(req, res)
+		}
+	}
+	return res
 }
 
 // Get makes a get request to the http client
-func (h *httpClient) Get(endpoint string, query types.Query, headers map[string]string) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Get(endpoint string, query types.Query, headers map[string]string) interfaces.HttpResponse {
+
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(GET, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			h.exec(req, res)
+		}
+	}
+	return res
 }
 
 // Head makes a head request
-func (h *httpClient) Head(endpoint string, headers map[string]string) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Head(endpoint string, headers map[string]string) interfaces.HttpResponse {
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, nil); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(HEAD, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			h.exec(req, res)
+		}
+	}
+	return res
 }
 
 // Post makes a post request to the http client
-func (h *httpClient) Post(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Post(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) interfaces.HttpResponse {
+
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(POST, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			e = handleRequestBody(req, body, bodyType)
+			if e != nil {
+				res.Error = e
+			} else {
+				h.exec(req, res)
+			}
+		}
+	}
+	return res
 }
 
 // Put makes a put request to the http client
-func (h *httpClient) Put(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Put(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) interfaces.HttpResponse {
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(PUT, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			e = handleRequestBody(req, body, bodyType)
+			if e != nil {
+				res.Error = e
+			} else {
+				h.exec(req, res)
+			}
+
+			h.exec(req, res)
+		}
+	}
+	return res
 }
 
 // Patch makes a patch request to the http client
-func (h *httpClient) Patch(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) *interfaces.HttpResponse {
-	return nil
+func (h *httpClient) Patch(endpoint string, query types.Query, headers map[string]string, body any, bodyType types.ContentType) interfaces.HttpResponse {
+	var res = &httpResponse{}
+
+	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
+		res.Error = err
+	} else {
+		if req, e := http.NewRequest(PUT, url, nil); e != nil {
+			res.Error = e
+		} else {
+			constructHeaders(req, headers)
+			e = handleRequestBody(req, body, bodyType)
+			if e != nil {
+				res.Error = e
+			} else {
+				h.exec(req, res)
+			}
+
+			h.exec(req, res)
+		}
+	}
+	return res
 }
 
 func isSuccessResponse(response *httpResponse) bool {
@@ -89,6 +194,12 @@ func handleRequestBody(request *http.Request, body any, bodyType types.ContentTy
 
 	if request.Header.Get("Content-Type") == "" {
 		request.Header.Set("Content-Type", bodyType.Header())
+	} else {
+		if ok := bodyType.FromHeader(request.Header.Get("Content-Type")); !ok {
+			return fmt.Errorf("Invalid Content-Type header set")
+		} else {
+			request.Header.Set("Content-Type", bodyType.Header())
+		}
 	}
 
 	switch bodyType {
@@ -177,9 +288,51 @@ func handleResponse(response *http.Response, res *httpResponse) {
 }
 
 func validateUrl(url string) error {
-	if ok := govalidator.IsURL(url); !ok {
+	if ok := (!isNullOrEmpty(url) && govalidator.IsURL(url)); !ok {
 		return types.ValidationError("Url")
 	} else {
 		return nil
+	}
+}
+
+func isNullOrEmpty(str string) bool {
+	return (str == blankString)
+}
+
+func (h *httpClient) constructAndValidateUrl(endpoint string, query types.Query) (string, error) {
+	var url string
+	if isNullOrEmpty(h.baseUrl) {
+		url = endpoint
+	} else {
+		url = fmt.Sprintf("%s%s", url, endpoint)
+	}
+
+	if query != nil {
+		q, err := query.UrlEncode()
+		if err != nil {
+			return "", err
+		}
+		url = fmt.Sprintf("%s?%s", url, q)
+	}
+	return url, validateUrl(url)
+}
+
+func (h *httpClient) exec(req *http.Request, res *httpResponse) {
+	var isSuccess = false
+	var attempt = 0
+
+	if h.maxRetry == nil {
+		h.SetMaxRetry(defaultMaxRetry)
+	}
+
+	for (attempt <= *h.maxRetry) && !isSuccess {
+		response, e := h.client.Do(req)
+		if e != nil {
+			res.Error = e
+			attempt++
+		} else {
+			isSuccess = true
+			handleResponse(response, res)
+		}
 	}
 }
