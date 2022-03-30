@@ -27,3 +27,19 @@ func ValidationError(attrName string) *HttpClientError {
 		ErrorMessage: "Failed to validate attribute",
 	}
 }
+
+func UnsupportedMIMETypeError(additional string) *HttpClientError {
+	return &HttpClientError{
+		ErrorCode:    2002,
+		ErrorDetails: fmt.Errorf("Unsupported mime type"),
+		ErrorMessage: fmt.Sprintf("Specified Content type is not currently supported.%s", additional),
+	}
+}
+
+func UnMarshallError(err error) *HttpClientError {
+	return &HttpClientError{
+		ErrorCode:    2003,
+		ErrorDetails: err,
+		ErrorMessage: "Failed to unmarshal response to given object",
+	}
+}
