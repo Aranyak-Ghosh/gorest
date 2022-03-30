@@ -1,10 +1,14 @@
 package implementation
 
 import (
+	"bytes"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 
 	"github.com/Aranyak-Ghosh/gorest/interfaces"
+	"github.com/Aranyak-Ghosh/gorest/types"
 )
 
 type httpResponse struct {
@@ -22,9 +26,24 @@ func (h *httpResponse) Result(val *any) error {
 		return h.receivedError
 	}
 
-	http.DetectContentType(h.responseData)
+	ct := http.DetectContentType(h.responseData)
 
-	return nil
+	var contentType types.ContentType
+
+	if ok := contentType.FromHeader(ct); !ok {
+		return types.UnsupportedMIMETypeError("Access raw bytes by using RawData method")
+	}
+
+	switch contentType {
+	case types.JSON:
+		err := json.Unmarshal(h.responseData, val)
+		return types.UnMarshallError(err)
+	case types.XML:
+		err := xml.Unmarshal(h.responseData, val)
+		return types.UnMarshallError(err)
+	default:
+		return types.UnsupportedMIMETypeError("Access raw bytes by using RawData method")
+	}
 }
 
 func (h *httpResponse) IsSuccessfulResponse() bool {
@@ -45,4 +64,14 @@ func (h *httpResponse) Error() error {
 }
 func (h *httpResponse) RawResponse() *http.Response {
 	return h.nativeResponse
+}
+
+func isJsonArray(data []byte) bool {
+	var x []byte
+
+	copy(x, data)
+
+	x = bytes.TrimLeft(x, " \t\r\n")
+
+	return len(x) > 0 && x[0] == '['
 }
