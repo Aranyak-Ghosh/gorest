@@ -3,10 +3,19 @@ package types
 import "fmt"
 
 type HttpClientError struct {
-	ErrorCode    int
+	ErrorCode    ErrorCode
 	ErrorMessage string
 	ErrorDetails error
 }
+
+type ErrorCode int
+
+const (
+	SerializeBodyErrorCode ErrorCode = 2000 + iota
+	ValidationErrorCode
+	UnsupportedMIMETypeErrorCode
+	UnMarshallErrorCode
+)
 
 func (e *HttpClientError) Error() string {
 	return fmt.Errorf("%s: %w", e.ErrorMessage, e.ErrorDetails).Error()
@@ -14,7 +23,7 @@ func (e *HttpClientError) Error() string {
 
 func SerializeBodyError(err error) *HttpClientError {
 	return &HttpClientError{
-		ErrorCode:    2000,
+		ErrorCode:    SerializeBodyErrorCode,
 		ErrorDetails: err,
 		ErrorMessage: "Failed to serialize supplied body with error",
 	}
@@ -22,7 +31,7 @@ func SerializeBodyError(err error) *HttpClientError {
 
 func ValidationError(attrName string) *HttpClientError {
 	return &HttpClientError{
-		ErrorCode:    2001,
+		ErrorCode:    ValidationErrorCode,
 		ErrorDetails: fmt.Errorf("Validation for attribute %s failed", attrName),
 		ErrorMessage: "Failed to validate attribute",
 	}
@@ -30,7 +39,7 @@ func ValidationError(attrName string) *HttpClientError {
 
 func UnsupportedMIMETypeError(additional string) *HttpClientError {
 	return &HttpClientError{
-		ErrorCode:    2002,
+		ErrorCode:    UnsupportedMIMETypeErrorCode,
 		ErrorDetails: fmt.Errorf("Unsupported mime type"),
 		ErrorMessage: fmt.Sprintf("Specified Content type is not currently supported.%s", additional),
 	}
@@ -38,7 +47,7 @@ func UnsupportedMIMETypeError(additional string) *HttpClientError {
 
 func UnMarshallError(err error) *HttpClientError {
 	return &HttpClientError{
-		ErrorCode:    2003,
+		ErrorCode:    UnMarshallErrorCode,
 		ErrorDetails: err,
 		ErrorMessage: "Failed to unmarshal response to given object",
 	}
