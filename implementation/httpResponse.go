@@ -43,3 +43,6 @@ func (h *httpResponse) RawData() []byte {
 func (h *httpResponse) Error() error {
 	return fmt.Errorf("%w", h.receivedError)
 }
+func (h *httpResponse) RawResponse() *http.Response {
+	return h.nativeResponse
+}

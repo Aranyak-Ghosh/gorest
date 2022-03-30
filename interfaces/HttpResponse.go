@@ -9,4 +9,5 @@ type HttpResponse interface {
 	Status() int
 	Headers() http.Header
 	RawData() []byte
+	RawResponse() *http.Response
 }
