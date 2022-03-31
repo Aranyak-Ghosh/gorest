@@ -337,3 +337,12 @@ func (h *httpClient) exec(req *http.Request, res *httpResponse) {
 		}
 	}
 }
+
+func NewHTTPClient() interfaces.HttpClient {
+	var client *httpClient
+
+	client = new(httpClient)
+	client.client = http.DefaultClient
+
+	return client
+}
