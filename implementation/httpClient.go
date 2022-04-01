@@ -13,10 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aranyak-Ghosh/gorest/interfaces"
 	"github.com/Aranyak-Ghosh/gorest/types"
 	"github.com/asaskevich/govalidator"
-
-	"github.com/Aranyak-Ghosh/gorest/interfaces"
 )
 
 type httpClient struct {
@@ -338,7 +337,7 @@ func (h *httpClient) exec(req *http.Request, res *httpResponse) {
 	}
 }
 
-func NewHTTPClient() interfaces.HttpClient {
+func Client() interfaces.HttpClient {
 	var client *httpClient
 
 	client = new(httpClient)
