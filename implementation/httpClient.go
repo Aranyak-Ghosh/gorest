@@ -155,7 +155,6 @@ func (h *httpClient) Put(endpoint string, query types.Query, headers map[string]
 				h.exec(req, res)
 			}
 
-			h.exec(req, res)
 		}
 	}
 	return res
@@ -168,7 +167,7 @@ func (h *httpClient) Patch(endpoint string, query types.Query, headers map[strin
 	if url, err := h.constructAndValidateUrl(endpoint, query); err != nil {
 		res.receivedError = err
 	} else {
-		if req, e := http.NewRequest(PUT, url, nil); e != nil {
+		if req, e := http.NewRequest(PATCH, url, nil); e != nil {
 			res.receivedError = e
 		} else {
 			constructHeaders(req, headers)
@@ -179,7 +178,6 @@ func (h *httpClient) Patch(endpoint string, query types.Query, headers map[strin
 				h.exec(req, res)
 			}
 
-			h.exec(req, res)
 		}
 	}
 	return res
@@ -304,7 +302,7 @@ func (h *httpClient) constructAndValidateUrl(endpoint string, query types.Query)
 	if isNullOrEmpty(h.baseUrl) {
 		url = endpoint
 	} else {
-		url = fmt.Sprintf("%s%s", url, endpoint)
+		url = fmt.Sprintf("%s%s", h.baseUrl, endpoint)
 	}
 
 	if query != nil {
