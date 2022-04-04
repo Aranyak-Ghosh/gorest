@@ -22,10 +22,14 @@ func (e *HttpClientError) Error() string {
 }
 
 func SerializeBodyError(err error) *HttpClientError {
-	return &HttpClientError{
-		ErrorCode:    SerializeBodyErrorCode,
-		ErrorDetails: err,
-		ErrorMessage: "Failed to serialize supplied body with error",
+	if err == nil {
+		return nil
+	} else {
+		return &HttpClientError{
+			ErrorCode:    SerializeBodyErrorCode,
+			ErrorDetails: err,
+			ErrorMessage: "Failed to serialize supplied body with error",
+		}
 	}
 }
 
@@ -46,9 +50,13 @@ func UnsupportedMIMETypeError(additional string) *HttpClientError {
 }
 
 func UnMarshallError(err error) *HttpClientError {
-	return &HttpClientError{
-		ErrorCode:    UnMarshallErrorCode,
-		ErrorDetails: err,
-		ErrorMessage: "Failed to unmarshal response to given object",
+	if err != nil {
+		return &HttpClientError{
+			ErrorCode:    UnMarshallErrorCode,
+			ErrorDetails: err,
+			ErrorMessage: "Failed to unmarshal response to given object",
+		}
+	} else {
+		return nil
 	}
 }
