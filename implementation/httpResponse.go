@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/Aranyak-Ghosh/gorest/interfaces"
@@ -21,14 +22,18 @@ type httpResponse struct {
 
 var _ interfaces.HttpResponse = (*httpResponse)(nil)
 
-func (h *httpResponse) Result(val *any) error {
+func (h *httpResponse) Result(val any) error {
 	if h.receivedError != nil {
 		return h.receivedError
 	}
 
-	ct := http.DetectContentType(h.responseData)
+	ct := h.responseHeaders.Get("Content-Type")
 
 	var contentType types.ContentType
+
+	if h.responseData == nil {
+		h.responseData = h.RawData()
+	}
 
 	if ok := contentType.FromHeader(ct); !ok {
 		return types.UnsupportedMIMETypeError("Access raw bytes by using RawData method")
@@ -37,10 +42,18 @@ func (h *httpResponse) Result(val *any) error {
 	switch contentType {
 	case types.JSON:
 		err := json.Unmarshal(h.responseData, val)
-		return types.UnMarshallError(err)
+		if err != nil {
+			return types.UnMarshallError(err)
+		} else {
+			return nil
+		}
 	case types.XML:
 		err := xml.Unmarshal(h.responseData, val)
-		return types.UnMarshallError(err)
+		if err != nil {
+			return types.UnMarshallError(err)
+		} else {
+			return nil
+		}
 	default:
 		return types.UnsupportedMIMETypeError("Access raw bytes by using RawData method")
 	}
@@ -57,10 +70,25 @@ func (h *httpResponse) Headers() http.Header {
 	return http.Header(h.responseHeaders)
 }
 func (h *httpResponse) RawData() []byte {
+
+	if h.responseData == nil {
+		defer h.nativeResponse.Body.Close()
+		body, err := ioutil.ReadAll(h.nativeResponse.Body)
+
+		if err != nil {
+			h.receivedError = err
+		} else {
+			h.responseData = body
+		}
+	}
 	return []byte(h.responseData)
 }
 func (h *httpResponse) Error() error {
-	return fmt.Errorf("%w", h.receivedError)
+	if h.receivedError != nil {
+		return fmt.Errorf("%w", h.receivedError)
+	} else {
+		return nil
+	}
 }
 func (h *httpResponse) RawResponse() *http.Response {
 	return h.nativeResponse
