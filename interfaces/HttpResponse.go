@@ -3,7 +3,7 @@ package interfaces
 import "net/http"
 
 type HttpResponse interface {
-	Result(*any) error
+	Result(any) error
 	Error() error
 	IsSuccessfulResponse() bool
 	Status() int
