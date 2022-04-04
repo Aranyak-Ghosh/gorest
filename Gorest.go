@@ -5,9 +5,6 @@ import (
 	"github.com/Aranyak-Ghosh/gorest/interfaces"
 )
 
-type HttpClient interfaces.HttpClient
-type HttpResponse interfaces.HttpResponse
-
-func NewClient() HttpClient {
+func NewClient() interfaces.HttpClient {
 	return implementation.Client()
 }
